@@ -3,6 +3,15 @@ const fs = require('fs');
 const readline = require('readline');
 const {google} = require('googleapis');
 const util = require('util');
+const logger = require('./logger.js');
+const yargs = require('yargs');
+const findUp = require('find-up');
+const cp = require('./yargCommands/copy/command');
+
+
+findUp(['.gdcprc', '.gdcprc.json']).then(function loadConfig(configPath) {
+    const config = configPath ? JSON.parse(fs.readFileSync(configPath)) : {};
+});
 
 // If modifying these scopes, delete token.json.
 const SCOPES = [
@@ -14,6 +23,7 @@ const SCOPES = [
 // time.
 const TOKEN_PATH = 'token.json';
 const CREDENTIALS_FILE = process.env['GOOGLE_APPLICATION_CREDENTIALS'];
+const CONFIG_FILE = process.env['UPLOADER_CONFIG'];
 
 const readFile = util.promisify(fs.readFile);
 const writeFile = util.promisify(fs.writeFile);
@@ -58,7 +68,7 @@ async function authorizeOAuth(credentials) {
         oAuth2Client.setCredentials(JSON.parse(token));
         return oAuth2Client;
     }).catch(err=> {
-        console.error(err);
+        logger.error(err);
         return getAccessToken(oAuth2Client);
     });
 }
@@ -74,7 +84,7 @@ async function getAccessToken(oAuth2Client) {
         access_type: 'offline',
         scope:       SCOPES
     });
-    console.log('Authorize this app by visiting this url:', authUrl);
+    logger.log('Authorize this app by visiting this url:', authUrl);
     const rl = readline.createInterface({
         input:  process.stdin,
         output: process.stdout
@@ -87,11 +97,11 @@ async function getAccessToken(oAuth2Client) {
                 // Store the token to disk for later program executions
                 return writeFile(TOKEN_PATH, JSON.stringify(token))
                     .then(() => {
-                        console.log('Token stored to', TOKEN_PATH);
+                        logger.log('Token stored to', TOKEN_PATH);
                         return oAuth2Client;
                     });
             }).catch(err=> {
-                console.error('Error retrieving access token', err);
+                logger.error('Error retrieving access token', err);
                 throw err;
             }));
         });
@@ -109,15 +119,15 @@ async function listFiles(drive) {
     }).then(res => {
         const files = res.data.files;
         if (files.length) {
-            console.log('Files:');
+            logger.log('Files:');
             files.map((file) => {
-                console.log(`${file.name} (${file.id})`);
+                logger.log(`${file.name} (${file.id})`);
             });
         } else {
-            console.log('No files found.');
+            logger.log('No files found.');
         }
     }).catch(err=> {
-        console.log('The API returned an error: ' + err);
+        logger.log('The API returned an error: ' + err);
     });
 }
 
@@ -135,9 +145,9 @@ async function upload(drive) {
         media:    media,
         fields:   'id'
     }).then(file=> {
-        console.log('File Id: ', file.id);
+        logger.log('File Id: ', file.id);
     }).catch(err=>{
-        console.error(err);
+        logger.error(err);
     });
 }
 
@@ -151,8 +161,16 @@ async function createTempFolder(drive) {
         resource: fileMetadata,
         fields:   'id'
     }).then(file=> {
-        console.log('File Id: ', file.id);
+        logger.log('File Id: ', file.id);
     }).catch(err=>{
-        console.error(err);
+        logger.error(err);
     });
 }
+
+yargs.usage('$0 - ')
+    .config(config)
+    .command(cp())
+    .demandCommand(1, 'You need at least one command before moving on')
+    .wrap(null)
+    .help()
+    .argv;
