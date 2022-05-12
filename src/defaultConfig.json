@@ -1,0 +1,16 @@
+{
+  "google": {
+    "driveAPIVersion": "v3",
+    "Possible values for authType are serviceAccount and OAuth": "",
+    "authType": "",
+    "googleAppCredsFile": "",
+    "googleAppCreds": {},
+    "googleAppCredsEnvVar": "GOOGLE_APPLICATION_CREDENTIALS",
+    "The file token.json stores the user's access and refresh tokens, and is created automatically when the authorization flow completes for the first time.": "",
+    "tokenFile": "token.json",
+    "scopes": [
+      "https://www.googleapis.com/auth/drive.metadata.readonly",
+      "https://www.googleapis.com/auth/drive.file"
+    ]
+  }
+}

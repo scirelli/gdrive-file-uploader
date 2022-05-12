@@ -1,9 +1,10 @@
 const fs = require('fs'),
     {promisify} = require('util'),
-    readFile = promisify(fs.readFile);
+    readFile = promisify(fs.readFile),
+    merge = require('lodash.merge');
 
-module.exports = (config, logger)=> {
-    const handler = require('./handler')(config, logger);
+module.exports = ()=> {
+    const handler = require('./handler')();
 
     return {
         command:     ['copy <source> <target>', '$0'],
@@ -23,7 +24,7 @@ module.exports = (config, logger)=> {
                     'config': {
                         alias:        'c',
                         describe:     'Config file. Contains Google drive setup information.',
-                        demandOption: true,
+                        demandOption: false,
                         type:         'string'
                     },
                     'recursive': {
@@ -52,7 +53,7 @@ module.exports = (config, logger)=> {
                         type:         'boolean'
                     }
                 }).coerce('config', function (arg) {
-                    return readFile(arg, {encoding: 'utf8'}).then(JSON.parse);
+                    merge(arg.cfg, readFile(arg.config, {encoding: 'utf8'}).then(JSON.parse));
                 })
                 .example('$0 --config /tmp/config.json /path/of/file/to/copy.txt /destination/on/Google/Drive', 'Copy a file to Google Drive')
                 .example('$0 --config /tmp/config.json -r /path/of/dir/to/copy /destination/on/Google/Drive', 'Copy all files and directories to Google Drive');

@@ -1,0 +1,29 @@
+#!/usr/bin/env node
+const fs = require('fs');
+const logger = require('./logger.js');
+const yargs = require('yargs');
+const findUpPromise = import('find-up');
+const cp = require('./yargCommands/copy/command');
+const merge = require('lodash.merge');
+
+const configDefaults = require('./defaultConfig.json');
+
+findUpPromise.then(findUpModule=>findUpModule.findUp(['.gdcprc', '.gdcprc.json']))
+    .then(async function loadConfig(configPath) {
+        const config = configPath ? JSON.parse(fs.readFileSync(configPath)) : null;
+        if(config === null) {
+            throw new Error('Config file is required.');
+        }
+        return merge({
+            logger: logger
+        }, configDefaults, config);
+    }).then(config=> {
+        yargs.usage('$0 - ')
+            .config({cfg:config})
+            .command(cp())
+            .wrap(null)
+            .help()
+            .argv;
+    }).catch(err=> {
+        logger.error(err);
+    });
